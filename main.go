@@ -60,18 +60,22 @@ func (s *ChatServer) Run() {
 				})
 
 			case name := <-s.LeavePipe:
+				var left bool
 				s.mu.Lock()
 				if client, exists := s.clients[name]; exists {
 					close(client.DisplayPipe)
 					delete(s.clients, name)
+					left = true
+				}
+				s.mu.Unlock()
 
+				if left {
 					s.broadcast(Message{
 						Sender: name,
 						Type:   "leave",
 						Text:   fmt.Sprintf("User %s left the chat.", name),
 					})
 				}
-				s.mu.Unlock()
 
 			case msg := <-s.MessagePipe:
 				s.broadcast(msg)
